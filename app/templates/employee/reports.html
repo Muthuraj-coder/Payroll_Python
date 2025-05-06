@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}My Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-file-alt me-2"></i>My Reports</h2>
+            <p class="text-muted">Generate and download your personal reports</p>
+        </div>
+    </div>
+
+    <!-- Report Generation Form -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Generate Report</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('employee.generate_report') }}">
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="report_type" class="form-label">Report Type</label>
+                            <select class="form-select" id="report_type" name="report_type">
+                                <option value="work_records">Work Records</option>
+                                <option value="earnings">Earnings Summary</option>
+                                <option value="detailed">Detailed Report</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download me-2"></i>Generate Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Reports</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in recent_reports %}
+                                <tr>
+                                    <td>{{ report.date_created.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ report.report_type }}</td>
+                                    <td>
+                                        <a href="{{ url_for('employee.download_report', report_id=report.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No reports generated yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

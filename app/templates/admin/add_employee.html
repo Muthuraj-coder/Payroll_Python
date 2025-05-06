@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Add Employee{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add New Employee</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.add_employee') }}">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Employee Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="hourly_rate" class="form-label">Hourly Rate</label>
+                    <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" step="0.01" min="0" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Employee</button>
+                <a href="{{ url_for('admin.employees') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

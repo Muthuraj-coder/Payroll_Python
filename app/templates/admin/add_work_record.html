@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Add Work Record{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add Work Record</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.add_work_record') }}">
+                <div class="mb-3">
+                    <label for="employee_id" class="form-label">Employee</label>
+                    <select class="form-select" id="employee_id" name="employee_id" required>
+                        <option value="">Select Employee</option>
+                        {% for employee in employees %}
+                        <option value="{{ employee['id'] }}">{{ employee['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="date" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="date" name="date" required>
+                </div>
+                <div class="mb-3">
+                    <label for="hours_worked" class="form-label">Hours Worked</label>
+                    <input type="number" class="form-control" id="hours_worked" name="hours_worked" step="0.01" min="0" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Work Record</button>
+                <a href="{{ url_for('admin.work_records') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Set default date to today
+    document.getElementById('date').valueAsDate = new Date();
+</script>
+{% endblock %}
+{% endblock %} 
