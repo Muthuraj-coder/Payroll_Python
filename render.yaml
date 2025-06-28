@@ -7,10 +7,6 @@ services:
       python migrate.py
     startCommand: gunicorn run:app
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: payroll-db
-          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_APP

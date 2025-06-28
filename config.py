@@ -5,12 +5,17 @@ class Config:
     # Security
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-here'
     
-    # Database
+    # Database - Use SQLite by default, PostgreSQL if DATABASE_URL is set
     BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
     DATABASE_PATH = os.path.join(BASE_DIR, 'instance', 'payroll.db')
     
-    # Use PostgreSQL on Render, SQLite locally
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{DATABASE_PATH}'
+    # Check if we have a PostgreSQL URL, otherwise use SQLite
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL and DATABASE_URL.startswith('postgresql://'):
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    else:
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Session configuration
