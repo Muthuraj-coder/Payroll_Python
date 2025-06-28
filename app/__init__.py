@@ -1,11 +1,9 @@
 from flask import Flask
 from flask_login import LoginManager
-from flask_migrate import Migrate
 from app.database import init_db, db
 from app.config import Config
 
 login_manager = LoginManager()
-migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
@@ -19,9 +17,6 @@ def create_app():
     
     # Initialize SQLAlchemy
     db.init_app(app)
-    
-    # Initialize Flask-Migrate
-    migrate.init_app(app, db)
     
     # Initialize database within application context
     with app.app_context():
