@@ -7,6 +7,54 @@ from app.config import Config
 
 db = SQLAlchemy()
 
+class User(db.Model):
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
+    
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+    
+    def check_password(self, password):
+        from werkzeug.security import check_password_hash
+        return check_password_hash(self.password, password)
+
+class Employee(db.Model):
+    __tablename__ = 'employees'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    hourly_rate = db.Column(db.Float, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    
+    # Relationship
+    user = db.relationship('User', backref='employee', uselist=False)
+    work_records = db.relationship('WorkRecord', backref='employee', lazy=True)
+
+class WorkRecord(db.Model):
+    __tablename__ = 'work_records'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    hours_worked = db.Column(db.Float, nullable=False)
+    amount_earned = db.Column(db.Float, nullable=False)
+
+class Report(db.Model):
+    __tablename__ = 'reports'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
+    report_type = db.Column(db.String(50), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+
 def get_db_path():
     """Get the path to the SQLite database file."""
     return Config.DATABASE_PATH
@@ -27,81 +75,30 @@ def close_db(e=None):
         db.session.close()
 
 def init_db():
-    """Initialize the database with required tables."""
-    db = get_db()
-    cursor = db.session.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            is_admin BOOLEAN DEFAULT 0,
-            employee_id INTEGER
+    """Initialize the database with required tables and admin user."""
+    from app.config import Config
+    
+    # Create all tables
+    db.create_all()
+    
+    # Check if admin user exists
+    admin_user = User.query.filter_by(username=Config.ADMIN_USERNAME).first()
+    
+    if not admin_user:
+        # Create default admin user
+        admin_user = User(
+            username=Config.ADMIN_USERNAME,
+            is_admin=True
         )
-    ''')
-
-    cursor = db.session.execute('''
-        CREATE TABLE IF NOT EXISTS employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            hourly_rate REAL NOT NULL,
-            user_id INTEGER,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
-
-    cursor = db.session.execute('''
-        CREATE TABLE IF NOT EXISTS work_records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER NOT NULL,
-            date DATE NOT NULL,
-            hours_worked REAL NOT NULL,
-            amount_earned REAL NOT NULL,
-            FOREIGN KEY (employee_id) REFERENCES employees (id)
-        )
-    ''')
-
-    cursor = db.session.execute('''
-        CREATE TABLE IF NOT EXISTS reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER,
-            report_type TEXT NOT NULL,
-            start_date DATE NOT NULL,
-            end_date DATE NOT NULL,
-            content TEXT NOT NULL,
-            date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (employee_id) REFERENCES employees (id)
-        )
-    ''')
-
-    try:
-        # Start transaction
-        db.session.execute("BEGIN")
+        admin_user.set_password(Config.ADMIN_PASSWORD)
         
-        # Clean up any orphaned records
-        db.session.execute("DELETE FROM work_records WHERE employee_id NOT IN (SELECT id FROM employees)")
-        db.session.execute("DELETE FROM reports WHERE employee_id NOT IN (SELECT id FROM employees)")
-        db.session.execute("DELETE FROM employees WHERE user_id NOT IN (SELECT id FROM users)")
-        db.session.execute("UPDATE users SET employee_id = NULL WHERE employee_id NOT IN (SELECT id FROM employees)")
-        
-        # Check if admin user exists
-        cursor = db.session.execute('SELECT id FROM users WHERE username = ? AND is_admin = 1', (Config.ADMIN_USERNAME,))
-        admin_user = cursor.fetchone()
-        
-        if not admin_user:
-            # Create default admin user
-            admin_password_hash = generate_password_hash(Config.ADMIN_PASSWORD)
-            db.session.execute('''
-                INSERT INTO users (username, password, is_admin)
-                VALUES (?, ?, 1)
-            ''', (Config.ADMIN_USERNAME, admin_password_hash))
-        
-        # Commit all changes
+        db.session.add(admin_user)
         db.session.commit()
-        
-    except Exception as e:
-        # Rollback on error
-        db.session.rollback()
-        raise e
+        print(f"Admin user '{Config.ADMIN_USERNAME}' created successfully!")
+    else:
+        print(f"Admin user '{Config.ADMIN_USERNAME}' already exists!")
+    
+    print("Database initialization completed!")
 
 def query_db(query, args=(), one=False):
     """Execute a query and return the results."""

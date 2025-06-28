@@ -15,8 +15,8 @@ services:
         generateValue: true
       - key: FLASK_APP
         value: run.py
-      - key: FLASK_ENV
-        value: production
+      - key: FLASK_DEBUG
+        value: "0"
     plan: free
 
 databases:
