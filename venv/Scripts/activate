@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\muthu\OneDrive\Documents\Python_Project\payroll_web\venv"
+VIRTUAL_ENV="D:\Payroll_Python\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
