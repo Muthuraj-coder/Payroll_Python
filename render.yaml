@@ -13,8 +13,4 @@ services:
         value: run.py
       - key: FLASK_DEBUG
         value: "0"
-    plan: free
-
-databases:
-  - name: payroll-db
     plan: free 
