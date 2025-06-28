@@ -6,4 +6,6 @@ Flask-Migrate==4.0.5
 email-validator==2.1.1
 python-dotenv==1.0.1
 Werkzeug==2.0.1
-reportlab==4.0.4 
+reportlab==4.0.4
+psycopg2-binary
+gunicorn==21.2.0 

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: payroll-flask-app
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python migrate.py
+    startCommand: gunicorn run:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: payroll-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_APP
+        value: run.py
+      - key: FLASK_ENV
+        value: production
+    plan: free
+
+databases:
+  - name: payroll-db
+    plan: free 

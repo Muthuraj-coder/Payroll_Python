@@ -1,9 +1,11 @@
 from flask import g, current_app
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 import os
 from datetime import datetime
 from app.config import Config
+
+db = SQLAlchemy()
 
 def get_db_path():
     """Get the path to the SQLite database file."""
@@ -15,26 +17,19 @@ def get_db():
         # Ensure the instance directory exists
         os.makedirs(os.path.dirname(get_db_path()), exist_ok=True)
         
-        g.db = sqlite3.connect(
-            get_db_path(),
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
+        g.db = SQLAlchemy(app)
     return g.db
 
 def close_db(e=None):
     """Close the database connection."""
     db = g.pop('db', None)
     if db is not None:
-        db.close()
+        db.session.close()
 
 def init_db():
     """Initialize the database with required tables."""
     db = get_db()
-    cursor = db.cursor()
-
-    # Create users table with employee_id field
-    cursor.execute('''
+    cursor = db.session.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
@@ -44,8 +39,7 @@ def init_db():
         )
     ''')
 
-    # Create employees table
-    cursor.execute('''
+    cursor = db.session.execute('''
         CREATE TABLE IF NOT EXISTS employees (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -55,8 +49,7 @@ def init_db():
         )
     ''')
 
-    # Create work_records table
-    cursor.execute('''
+    cursor = db.session.execute('''
         CREATE TABLE IF NOT EXISTS work_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             employee_id INTEGER NOT NULL,
@@ -67,8 +60,7 @@ def init_db():
         )
     ''')
 
-    # Create reports table
-    cursor.execute('''
+    cursor = db.session.execute('''
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             employee_id INTEGER,
@@ -83,38 +75,38 @@ def init_db():
 
     try:
         # Start transaction
-        cursor.execute("BEGIN")
+        db.session.execute("BEGIN")
         
         # Clean up any orphaned records
-        cursor.execute("DELETE FROM work_records WHERE employee_id NOT IN (SELECT id FROM employees)")
-        cursor.execute("DELETE FROM reports WHERE employee_id NOT IN (SELECT id FROM employees)")
-        cursor.execute("DELETE FROM employees WHERE user_id NOT IN (SELECT id FROM users)")
-        cursor.execute("UPDATE users SET employee_id = NULL WHERE employee_id NOT IN (SELECT id FROM employees)")
+        db.session.execute("DELETE FROM work_records WHERE employee_id NOT IN (SELECT id FROM employees)")
+        db.session.execute("DELETE FROM reports WHERE employee_id NOT IN (SELECT id FROM employees)")
+        db.session.execute("DELETE FROM employees WHERE user_id NOT IN (SELECT id FROM users)")
+        db.session.execute("UPDATE users SET employee_id = NULL WHERE employee_id NOT IN (SELECT id FROM employees)")
         
         # Check if admin user exists
-        cursor.execute('SELECT id FROM users WHERE username = ? AND is_admin = 1', (Config.ADMIN_USERNAME,))
+        cursor = db.session.execute('SELECT id FROM users WHERE username = ? AND is_admin = 1', (Config.ADMIN_USERNAME,))
         admin_user = cursor.fetchone()
         
         if not admin_user:
             # Create default admin user
             admin_password_hash = generate_password_hash(Config.ADMIN_PASSWORD)
-            cursor.execute('''
+            db.session.execute('''
                 INSERT INTO users (username, password, is_admin)
                 VALUES (?, ?, 1)
             ''', (Config.ADMIN_USERNAME, admin_password_hash))
         
         # Commit all changes
-        db.commit()
+        db.session.commit()
         
     except Exception as e:
         # Rollback on error
-        db.rollback()
+        db.session.rollback()
         raise e
 
 def query_db(query, args=(), one=False):
     """Execute a query and return the results."""
     db = get_db()
-    cursor = db.execute(query, args)
+    cursor = db.session.execute(query, args)
     rv = cursor.fetchall()
     cursor.close()
     return (rv[0] if rv else None) if one else rv
@@ -122,7 +114,7 @@ def query_db(query, args=(), one=False):
 def execute_db(query, args=()):
     """Execute a query that modifies the database."""
     db = get_db()
-    cursor = db.execute(query, args)
-    db.commit()
+    cursor = db.session.execute(query, args)
+    db.session.commit()
     cursor.close()
     return cursor.lastrowid 
