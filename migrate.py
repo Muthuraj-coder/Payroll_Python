@@ -2,34 +2,19 @@
 """
 Database migration script for Render deployment
 """
-from app import create_app, db
-from app.models import User, Employee, WorkRecord, PayrollRecord
+from app import create_app
+from app.database import init_db
 from app.config import Config
 
-def init_database():
+def setup_database():
     """Initialize database tables and create admin user"""
     app = create_app()
     
     with app.app_context():
-        # Create all tables
-        db.create_all()
-        
-        # Check if admin user exists
-        admin_user = User.query.filter_by(username=Config.ADMIN_USERNAME).first()
-        if not admin_user:
-            # Create admin user
-            admin_user = User(
-                username=Config.ADMIN_USERNAME,
-                password=Config.ADMIN_PASSWORD,
-                role='admin'
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print(f"Admin user '{Config.ADMIN_USERNAME}' created successfully!")
-        else:
-            print(f"Admin user '{Config.ADMIN_USERNAME}' already exists!")
-        
+        # Initialize database (this will create tables and admin user)
+        init_db()
         print("Database initialization completed!")
+        print(f"Admin user '{Config.ADMIN_USERNAME}' is ready!")
 
 if __name__ == '__main__':
-    init_database() 
+    setup_database() 
